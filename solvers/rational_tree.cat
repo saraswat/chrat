@@ -14,7 +14,7 @@ eqArg @ argument(X0, N, Y0) \ argument(X1, N, Y1) <=> X0 =~ X1 |
 
 eqProp @ X ~=~ Y <=> X =~ Y.
 
-askEq @ ask(A ~=~ B) <=> checkTree(M, A, B).
+askEq @ ask(A ~=~ B) <=> checkTree(_M, A, B).
 
 checkTree(M, A, B) <=> eqTree(M, A, B) | entailed(A ~=~ B).
 
@@ -29,9 +29,11 @@ askArgs(M, A, B, I, N) <=> I =< N |
    argument(A, I, AI), argument(B, I, BI),
    askArg(M, A, B, I, AI, BI),
    J is I + 1, askArgs(M, A, B, J, N).
-askArgs(M, A, B, I, N) <=> true.
+askArgs(_M, _A, _B, I, N) <=> I  > N | true.
+
 collectArgs(M, A, B, I, N), entailedArg(M, A, B, I) <=>
-   J is I + 1, collectArgs(M, A, B, J, N).
+   J is I + 1,
+   collectArgs(M, A, B, J, N).
 collectArgs(M, A, B, I, N) <=> I > N |
    entailed(eqTree(M, A, B)).
 
