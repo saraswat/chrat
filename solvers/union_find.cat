@@ -22,8 +22,8 @@ askEq      @ ask(A =~ B) <=>
                 find(A, X), find(B, Y), check(A, B, X, Y).
 checkEq    @ root(X, _) \ check(A, B, X, X) <=> entailed(A =~ B).
 
-checkLeft  @ X ~> C \ check(A, B, X, Y) <=>
+checkLeft  @ X ~> _C \ check(A, B, X, Y) <=>
                 find(A, Z), check(A, B, Z, Y).
-checkRight @ Y ~> C \ check(A, B, X, Y) <=>
+checkRight @ Y ~> _C \ check(A, B, X, Y) <=>
                 find(B, Z), check(A, B, X, Z).
 
