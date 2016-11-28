@@ -1,0 +1,648 @@
+/* CHRat compiler http://contraintes.inria.fr/~tmartine/chrat/
+ * Copyright 2008, INRIA, Projet Contraintes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * CHR file CHRat.chr by Thierry Martinez */
+
+
+:- use_module(library(chr)).
+
+:- op(1100, fx, component).
+:- op(1100, fx, export).
+:- op(1100, fx, import).
+:- op(1100, fx, syntax).
+:- op(1050, xfx, infix).
+:- op(1050, xfx, prefix).
+:- op(1050, xfx, postfix).
+:- op(1000, xf, relation).
+:- op(1000, xf, additive).
+:- op(1000, xf, multiplicative).
+:- op(1000, xf, exponential).
+:- op(1050, xfx, from).
+
+:- op(700, xfx, ~=~).
+:- op(700, xfx, =~).
+:- op(700, xfx, ~>).
+
+:- chr_constraint
+	compile_list/1,
+	compile/2,
+	compiling/1,
+	end_compile/0,
+	compiler_ready/0,
+	current_component/1,
+	current_file/2,
+	error/1,
+
+	output_stream/1,
+	have_to_close_output/0,
+	close_output/0,
+
+	translate_stream/1,
+	translate_stream_component/2,
+	translate_stream_import_export/2,
+	translate_stream_rules/2,
+
+	read_stream/2,
+
+	declare_imports/2,
+	declare_exports/1,
+
+	rule_counter/1,
+	translate_rule/1,
+	translate_rule_aux/6,
+
+	chr_rules/1,
+	chr_cstr/1,
+	chr_cstr_def/1,
+
+	enumerate_chr_constraints/1,
+
+	begin_chr_output/0,
+	format_chr_constraints/1,
+	format_rules/0,
+	format_rules/1,
+	format_rule/1,
+
+	sequence/2,
+
+	split_guard/3,
+	split_guard_aux/5,
+
+	translate_head/2,
+	translate_head_aux/4,
+
+	translate_body/2,
+	translate_body_aux/4,
+
+	translate_chrat_constraint/4,
+	translate_local/4,
+	translate_local_aux/4,
+
+	ask/2,
+	entailed/2,
+	prefix_list/3,
+
+	builtin/1,
+	local/1,
+	imported/2,
+	exported/1,
+
+	export_prefix/1,
+	local_prefix/1,
+
+	main/0,
+	main/1.
+
+main <=>
+	current_prolog_flag(argv, Argv),
+      (
+		append(_PrologArgs, [--|AppArgs], Argv)
+	;
+		[_ | AppArgs] = Argv
+	), !,
+	(
+		main(AppArgs), !
+	;
+		nl,
+		print(failure),
+		nl
+	),
+	halt.
+
+main([]) <=>
+	print('CHRat compiler v0.1
+Thierry Martinez | Copyright 2008, INRIA, Projet Contraintes.
+
+Use ''chrat -h'' for usage informations.
+'),
+	halt.
+
+main(['-h']) <=>
+	print('Usage: chrat [OPTIONS] <FILENAMES>
+Compile the components enumerated in arguments (plus dependencies) in a
+single CHR program.
+
+	-o FILENAME	Target filename (default: standard output)
+'),
+	halt.
+
+main(L) <=>
+	output_stream(user_output),
+	rule_counter(0),
+	builtin(true / 0),
+	builtin(fail / 0),
+	builtin(= / 2),
+	builtin(\= / 2),
+	builtin(=.. / 2),
+	builtin(< / 2),
+	builtin(=< / 2),
+	builtin(> / 2),
+	builtin(>= / 2),
+	builtin(is / 2),
+	builtin(functor / 3),
+	builtin(arg / 3),
+	builtin(print / 1),
+	builtin(print / 2),
+	builtin(nl / 0),
+	builtin(nl / 1),
+	builtin(open / 3),
+	builtin(open / 4),
+	builtin(close / 1),
+	builtin(ttyflush / 0),
+	builtin(flush_output / 1),
+	builtin(read / 1),
+	builtin(read / 2),
+	builtin(read_term / 2),
+	builtin(read_term / 3),
+	builtin(line_count / 2),
+	builtin(line_position / 2),
+	builtin(format / 3),
+	builtin(atom_concat / 3),
+	builtin(concat_atom / 3),
+	builtin(sub_atom / 5),
+	builtin(call / 1),
+	builtin(halt / 0),
+	builtin(halt / 1),
+	builtin(! / 0),
+	builtin(find_chr_constraint / 1),
+	builtin(with_output_to / 2),
+	builtin(b_getval / 2),
+	builtin(b_setval / 2),
+	builtin(nb_getval / 2),
+	builtin(nb_setval / 2),
+	builtin(nb_linkval / 2),
+	builtin(nb_delete / 1),
+	builtin(term_variables / 2),
+	builtin(var / 1),
+	builtin(callable / 1),
+	builtin(compound / 1),
+	builtin(atom / 1),
+	builtin(integer / 1),
+	builtin(member / 2),
+	builtin(length / 2),
+	builtin(append / 3),
+	builtin(prolog_to_os_filename / 2),
+	chr_rules([]),
+	compile_list(L),
+	compiler_ready,
+	enumerate_chr_constraints(C),
+	begin_chr_output,
+	format_chr_constraints(C),
+	format_rules,
+	close_output.
+
+close_output, have_to_close_output, output_stream(Stream) <=>
+	close(Stream).
+close_output <=>
+	true.
+
+compile_list([]) <=>
+	true.
+compile_list(['-o', File | T]) <=>
+	open(File, write, Stream),
+	output_stream(Stream),
+	have_to_close_output,
+	compile_list(T).
+compile_list([Path | T]) <=> prolog_to_os_filename('/', Separator), concat_atom(Paths, Separator, Path), append(_, [File], Paths), atom_concat(Component, '.cat', File) |
+	compile(Component, Path),
+	compile_list(T).
+compile_list([Path | T]) <=> prolog_to_os_filename('/', Separator), concat_atom(Paths, Separator, Path), append(_, [Component], Paths) |
+	atom_concat(Path, '.cat', File),
+	compile(Component, File),
+	compile_list(T).
+
+compiling(Component) \ compile(Component, _) <=> true.
+compile(Component, File), compiler_ready <=>
+	compiling(Component),
+	current_component(Component),
+	atom_concat(Component, '$', Local_prefix),
+	atom_concat(Component, ':', Export_prefix),
+	local_prefix(Local_prefix),
+	export_prefix(Export_prefix),
+	open(File, read, Stream),
+	current_file(File, Stream),
+	translate_stream(Stream),
+	close(Stream),
+	end_compile.
+
+current_file(File, Stream) \ error(Msg) <=>
+	line_count(Stream, Line),
+	line_position(Stream, Column),
+	format(user_error, 'File ~p, line ~d, character ~d:\n', [File, Line, Column]),
+	format(user_error, '~p\n\n', Msg),
+	halt(1).
+
+end_compile \ current_component(_) <=> true.
+end_compile \ current_file(_, _) <=> true.
+end_compile, local_prefix(Prefix) \ local(F / N) <=>
+	atom_concat(Prefix, F, PrefixF),
+	chr_cstr_def(PrefixF / N).
+end_compile \ imported(F / N, Prefix) <=>
+	atom_concat(Prefix, F, PrefixF),
+	chr_cstr_def(PrefixF / N).
+end_compile, export_prefix(Prefix) \ exported(F / N) <=>
+	atom_concat(Prefix, F, PrefixF),
+	chr_cstr_def(PrefixF / N).
+end_compile <=> compiler_ready.
+
+read_stream(Stream, Term) <=>
+	catch(
+		read_term(Stream, Term, [singletons(warning)]),
+		error(syntax_error(_)),
+		error('Syntax error.')
+	).
+
+translate_stream(Stream) <=>
+	read_stream(Stream, Term),
+	translate_stream_component(Stream, Term).
+
+current_component(Component) \ translate_stream_component(Stream, (component Component)) <=>
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+current_component(Current) \ translate_stream_component(_, (component Component)) <=>
+	with_output_to(atom(Msg), format('The declared component name ''~p'' do not match the real name ''~p''.', [Component, Current])),
+	error(Msg).
+
+current_file(Current_file, _) \ translate_stream_import_export(Stream, (import Signatures from From)) <=>
+	atom_concat(From, ':', Prefix),
+	declare_imports(Signatures, Prefix),
+	prolog_to_os_filename('/', Separator), 
+	concat_atom(Paths, Separator, Current_file),
+	append(Folders, [_], Paths),
+	append(Folders, [From], Froms),
+	concat_atom(Froms, Separator, Relative_froms),
+	concat_atom(Definitives, Separator, Relative_froms),
+	append(_, [Component], Definitives),
+	atom_concat(Relative_froms, '.cat', File),
+	compile(Component, File),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (export Signatures)) <=>
+	declare_exports(Signatures),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix non-associative relation)) <=>
+	op(700, xfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix left-to-right relation)) <=>
+	op(700, xfy, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix right-to-left relation)) <=>
+	op(700, yfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix non-associative additive)) <=>
+	op(500, xfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix left-to-right additive)) <=>
+	op(500, xfy, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix right-to-left additive)) <=>
+	op(500, yfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix non-associative multiplicative)) <=>
+	op(400, xfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix left-to-right multiplicative)) <=>
+	op(400, xfy, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix right-to-left multiplicative)) <=>
+	op(400, yfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix non-associative exponential)) <=>
+	op(200, xfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix left-to-right exponential)) <=>
+	op(200, xfy, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, (syntax Operator infix right-to-left exponential)) <=>
+	op(200, yfx, Operator),
+	read_stream(Stream, Term),
+	translate_stream_import_export(Stream, Term).
+
+translate_stream_import_export(Stream, Term) <=>
+	translate_stream_rules(Stream, Term).
+
+translate_stream_rules(_, end_of_file) <=>
+	true.
+translate_stream_rules(Stream, Term) <=>
+	translate_rule(Term),
+	read_stream(Stream, Next_term),
+	translate_stream_rules(Stream, Next_term).
+
+declare_imports((I0, I1), Prefix) <=>
+	declare_imports(I0, Prefix),
+	declare_imports(I1, Prefix).
+
+declare_imports(F/N, Prefix) <=>
+	imported(F/N, Prefix).
+
+builtin(F/N) \ imported(F/N, _) <=>
+	error('A builtin cannot be imported.').
+
+imported(F/N, _) \ imported(F/N, _) <=>
+	with_output_to(Msg, format('The constraint ~a/~n cannot be imported twice.', [F, N])),
+	error(Msg).
+
+declare_exports((E0, E1)) <=>
+	declare_exports(E0),
+	declare_exports(E1).
+
+declare_exports(F/N) <=>
+	exported(F/N).
+
+translate_rule((Name @ H0 \ H1 <=> G | B)) <=>
+	translate_head(H0, H0t),
+	translate_head(H1, H1t),
+	split_guard(G, Builtins, CHR_guard),
+	translate_body(B, Bt),
+	translate_rule_aux(Name, H0t, H1t, Builtins, CHR_guard, Bt).
+
+chr_rules(List) \ translate_rule_aux(Name, H0t, H1t, Builtins, [], Bt) <=>
+	chr_rules([(Name @ H0t \ H1t <=> Builtins | Bt) | List]).
+
+chr_rules(List) \ translate_rule_aux(Name, H0t, H1t, Builtins, CHR_guard, Bt) <=>
+	ask(CHR_guard, Ask_CHR_guard),
+	entailed(CHR_guard, Entailed_CHR_guard),
+	append(H0t, H1t, Ht),
+	append(Entailed_CHR_guard, H1t, H1a),
+	sequence(Ask_CHR_guard, Ask_CHR_guards),
+	chr_rules([(Name-fire @ H0t \ H1a <=> Builtins | Bt), (Name-ask @ Ht \ [] <=> Builtins | Ask_CHR_guards) | List]).
+
+translate_rule((Name @ H0 \ H1 <=> B)) <=>
+	translate_rule((Name @ H0 \ H1 <=> true | B)).
+
+translate_rule((Name @ H <=> Right)) <=>
+	translate_rule((Name @ true \ H <=> Right)).
+
+translate_rule((Name @ H ==> Right)) <=>
+	translate_rule((Name @ H \ true <=> Right)).
+
+translate_rule(Anonym), rule_counter(Count) <=> \+ functor(Anonym, '@', 2) |
+	Index is Count + 1,
+	rule_counter(Index),
+	translate_rule(rule(Index) @ Anonym).
+
+chr_cstr(C) \ chr_cstr_def(C) <=> true.
+
+chr_rules(L), chr_cstr_def(F / N) <=>
+	atom_concat(ask_, F, Ask_F),
+	atom_concat(entailed_, F, Entailed_F),
+	functor(Token, F, N),
+	Token =.. [F | Args],
+	Ask_token =.. [Ask_F | Args],
+	Entailed_token =.. [Entailed_F | Args],
+	chr_rules([(trivial-F/N @ [Token] \ [Ask_token] <=> [] | Entailed_token) | L]),
+	chr_cstr(F / N),
+	chr_cstr(Ask_F / N),
+	chr_cstr(Entailed_F / N).
+
+chr_cstr(C), enumerate_chr_constraints(L) <=>
+	L = [C | T],
+	enumerate_chr_constraints(T).
+
+enumerate_chr_constraints(L) <=>
+	L = [].
+
+output_stream(Stream) \ begin_chr_output <=>
+	print(Stream, '% This CHR program was automatically generated by CHRat compiler.
+% PLEASE DO NOT MODIFY THIS FILE!!!
+'),
+	print(Stream, '
+:- use_module(library(chr)).
+').
+
+format_chr_constraints([]) <=>
+	true.
+output_stream(Stream) \ format_chr_constraints(L) <=>
+	sequence(L, S),
+	format(Stream, '\n~k.\n', [(:- chr_constraint S)]).
+
+chr_rules(List), format_rules <=>
+	reverse(List, Rev),
+	format_rules(Rev).
+
+format_rules([]) <=>
+	true.
+format_rules([H | T]) <=>
+	format_rule(H),
+	format_rules(T).
+
+output_stream(Stream) \ format_rule((Name @ [] \ H <=> [] | B)) <=>
+	sequence(H, Hs),
+	format(Stream, '\n~k.\n', [(Name @ Hs <=> B)]).
+
+output_stream(Stream) \ format_rule((Name @ [] \ H <=> G | B)) <=>
+	sequence(H, Hs),
+	sequence(G, Gs),
+	format(Stream, '\n~k.\n', [(Name @ Hs <=> Gs | B)]).
+
+output_stream(Stream) \ format_rule((Name @ H \ [] <=> [] | B)) <=>
+	sequence(H, Hs),
+	format(Stream, '\n~k.\n', [(Name @ Hs ==> B)]).
+
+output_stream(Stream) \ format_rule((Name @ H \ [] <=> G | B)) <=>
+	sequence(H, Hs),
+	sequence(G, Gs),
+	format(Stream, '\n~k.\n', [(Name @ Hs ==> Gs | B)]).
+
+output_stream(Stream) \ format_rule((Name @ H0 \ H1 <=> [] | B)) <=>
+	sequence(H0, H0s),
+	sequence(H1, H1s),
+	format(Stream, '\n~k.\n', [(Name @ H0s \ H1s <=> B)]).
+
+output_stream(Stream) \ format_rule((Name @ H0 \ H1 <=> G | B)) <=>
+	sequence(H0, H0s),
+	sequence(H1, H1s),
+	sequence(G, Gs),
+	format(Stream, '\n~k.\n', [(Name @ H0s \ H1s <=> Gs | B)]).
+
+sequence([], S) <=>
+	S = true.
+
+sequence([X], S) <=>
+	S = X.
+
+sequence([H | T], S) <=>
+	S = (H, St),
+	sequence(T, St).
+
+translate_head((H0, H1), List) <=>
+	translate_head(H0, List0),
+	translate_head(H1, List1),
+	append(List0, List1, List).
+
+translate_head(true, List) <=>
+	List = [].
+
+translate_head(ask(H), List) <=> functor(H, F, N) |
+	translate_local(H, F, N, Item),
+	Item =.. [IF | IArgs],
+	atom_concat(ask_, IF, Ask_F),
+	Ask_item =.. [Ask_F | IArgs],
+	List = [Ask_item].
+translate_head(entailed(_), _) <=>
+	fail.
+translate_head(H, List) <=> functor(H, F, N) |
+	translate_head_aux(H, F, N, Item),
+	List = [Item].
+
+builtin(F / N) \ translate_head_aux(_, F, N, _) <=>
+	fail.
+translate_head_aux(H, F, N, Item) <=>
+	translate_chrat_constraint(H, F, N, Item).
+
+translate_body(ask(_), _) <=>
+	error('A goal should not contain an ask(.) token.').
+
+translate_body(entailed(H), Entailed_item) <=> functor(H, F, N) |
+	translate_local(H, F, N, Item),
+	Item =.. [IF | IArgs],
+	atom_concat(entailed_, IF, Entailed_F),
+	Entailed_item =.. [Entailed_F | IArgs].
+
+translate_body(entailed(_), _) <=>
+	error('The argument of entailed(.) should be a token.').
+
+translate_body((\+ B0), Bt) <=>
+	Bt = (\+ B0t),
+	translate_body(B0, B0t).
+
+translate_body((B0, B1), Bt) <=>
+	Bt = (B0t, B1t),
+	translate_body(B0, B0t),
+	translate_body(B1, B1t).
+
+translate_body((B0 ; B1), Bt) <=>
+	Bt = (B0t ; B1t),
+	translate_body(B0, B0t),
+	translate_body(B1, B1t).
+
+translate_body((B0 -> B1), Bt) <=>
+	Bt = (B0t -> B1t),
+	translate_body(B0, B0t),
+	translate_body(B1, B1t).
+
+translate_body(catch(B0, E, B1), Bt) <=>
+	Bt = catch(B0t, E, B1t),
+	translate_body(B0, B0t),
+	translate_body(B1, B1t).
+
+translate_body(H, Bt) <=> functor(H, F, N) |
+	translate_body_aux(H, F, N, Bt).
+
+translate_body(_, _) <=>
+	error('A goal should only contain callable terms.').
+
+builtin(F / N) \ translate_body_aux(H, F, N, Item) <=>
+	H = Item.
+translate_body_aux(H, F, N, Item) <=>
+	translate_chrat_constraint(H, F, N, Item).
+
+
+split_guard((G0, G1), Builtins, CHR) <=>
+	split_guard(G0, Builtins0, CHR0),
+	split_guard(G1, Builtins1, CHR1),
+	append(Builtins0, Builtins1, Builtins),
+	append(CHR0, CHR1, CHR).
+
+split_guard(true, Builtins, CHR) <=>
+	Builtins = [],
+	CHR = [].
+
+split_guard(G, Builtins, CHR) <=> functor(G, F, N) |
+	split_guard_aux(G, F, N, Builtins, CHR).
+
+builtin(F / N) \ split_guard_aux(G, F, N, Builtins, CHR) <=>
+	Builtins = [G],
+	CHR = [].
+split_guard_aux(G, F, N, Builtins, CHR) <=>
+	translate_chrat_constraint(G, F, N, CHR_constraint),
+	Builtins = [],
+	CHR = [CHR_constraint].
+
+imported(F / N, Prefix) \ translate_chrat_constraint(G, F, N, C) <=>
+	G =.. [_ | Args],
+	atom_concat(Prefix, F, NewF),
+	C =.. [NewF | Args].
+
+translate_chrat_constraint(G, F, N, C) <=>
+	translate_local_aux(G, F, N, C).
+
+builtin(F / N) \ translate_local(_, F, N, _) <=>
+	error('A builtin should not be used as a local constraint.').
+
+imported(F / N, _) \ translate_local(_, F, N, _) <=>
+	error('An external constraint should not be used as a local constraint.').
+
+translate_local(G, F, N, C) <=>
+	translate_local_aux(G, F, N, C).
+
+exported(F / N), export_prefix(Prefix) \ translate_local_aux(G, F, N, C) <=>
+	G =.. [_ | Args],
+	atom_concat(Prefix, F, NewF),
+	C =.. [NewF | Args].
+
+local_prefix(Prefix) \ translate_local_aux(G, F, N, C) <=>
+	G =.. [_ | Args],
+	local(F / N),
+	atom_concat(Prefix, F, NewF),
+	C =.. [NewF | Args].
+
+local(ask / 1) <=>
+	error('A constraint should not have ask/1 as functor.').
+local(entailed / 1) <=>
+	error('A constraint should not have entailed/1 as functor.').
+local(F / N) \ local(F / N) <=> true.
+
+ask(L, Asks) <=>
+	prefix_list(ask_, L, Asks).
+
+entailed(L, Entaileds) <=>
+	prefix_list(entailed_, L, Entaileds).
+
+prefix_list(_, [], Tgt) <=>
+	Tgt = [].
+prefix_list(Prefix, [H | T], Tgt) <=>
+	Tgt = [TgtH | TgtT],
+	H =.. [F | Args],
+	atom_concat(Prefix, F, PrefixF),
+	TgtH =.. [PrefixF | Args],
+	prefix_list(Prefix, T, TgtT).

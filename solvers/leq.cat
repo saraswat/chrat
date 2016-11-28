@@ -1,0 +1,9 @@
+component leq.
+export leq/2.
+
+reflexive     @ leq(X,X) <=> true.
+antisymmetric @ leq(X,Y), leq(Y,X) <=> X = Y.
+transitive    @ leq(X,Y), leq(Y,Z) ==> leq(X,Z).
+redundant     @ leq(X,Y) \ leq(X,Y) <=> true.
+
+reflexiveAsk @ ask(leq(X,X)) <=> entailed(leq(X,X)).

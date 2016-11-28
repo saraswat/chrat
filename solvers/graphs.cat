@@ -1,0 +1,13 @@
+component graphs.
+
+export edge/2, path/2.
+
+edge(A, B) \ edge(A, B) <=> true.
+
+path(A, A) <=> true.
+edge(A, B) ==> path(A, B).
+path(A, B), path(B, C) ==> path(A, C).
+path(A, B) \ path(A, B) <=> true.
+
+ask(path(A, A)) <=> entailed(path(A, A)).
+path(A, B) \ ask(path(A, B)) <=> entailed(path(A, B)).

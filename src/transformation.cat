@@ -1,0 +1,119 @@
+component transformation.
+
+import error/1 from common.
+
+export builtin/1, imported/2, exported/1, export_prefix/1, local_prefix/1, transform_goal/2, transform_rules/2, declare_imports/2.
+
+declare_imports(I, Component) <=>
+	atom_concat(Component, ':', Prefix),
+	declare_imports_aux(I, Prefix).
+
+declare_imports_aux((I0, I1), Prefix) <=>
+	declare_imports_aux(I0, Prefix),
+	declare_imports_aux(I1, Prefix).
+
+declare_imports_aux(F/N, Prefix) <=>
+	imported(F/N, Prefix)
+.
+builtin(F/N) \ imported(F/N) <=>
+	error('A builtin cannot be imported.').
+
+imported(F/N, _) \ imported(F/N, _) <=>
+	with_output_to(Msg, format('The constraint ~a/~n cannot be imported twice.', [F, N])),
+	error(Msg).
+
+transform_goal((\+ G0), Gt) <=>
+	Gt = (\+ Gt0),
+	transform_goal(G0, Gt0).
+
+transform_goal((G0, G1), Gt) <=>
+	Gt = (Gt0, Gt1),
+	transform_goal(G0, Gt0),
+	transform_goal(G1, Gt1).
+
+transform_goal((G0 ; G1), Gt) <=>
+	Gt = (Gt0 ; Gt1),
+	transform_goal(G0, Gt0),
+	transform_goal(G1, Gt1).
+
+transform_goal((G0 -> G1), Gt) <=>
+	Gt = (Gt0 -> Gt1),
+	transform_goal(G0, Gt0),
+	transform_goal(G1, Gt1).
+
+transform_goal(catch(G0, E, G1), Gt) <=>
+	Gt = catch(Gt0, E, Gt1),
+	transform_goal(G0, Gt0),
+	transform_goal(G1, Gt1).
+
+transform_goal(ask(_), _) <=>
+	error('A goal should not contain an ask(.) token.').
+
+transform_goal(entailed(Token), Gt) <=> functor(Token, F, N) |
+	transform_local(Token, F, N, Local_token),
+	entailed([Local_token], [Gt]).
+
+transform_goal(entailed(_), _) <=>
+	error('The argument of entailed(.) should be a token.').
+
+transform_goal(G, Gt) <=> functor(G, F, N) |
+	transform_goal_aux(G, F, N, Gt).
+
+transform_goal(_, _) <=>
+	error('A goal should only contain callable terms.').	
+
+builtin(F / N) \ transform_goal_aux(G, F, N, Gt) <=>
+	G = Gt.
+
+transform_goal_aux(G, F, N, Gt) <=>
+	transform_chrat_constraint(G, F, N, Gt).
+
+imported(F / N, Prefix) \ transform_chrat_constraint(C, F, N, Ct) <=>
+	prefix_functor(Prefix, C, Ct).
+
+transform_chrat_constraint(Component:C, _, _, Ct) <=>
+	atom_concat(Component, ':', Prefix),
+	prefix_functor(Prefix, C, Ct).
+
+transform_chrat_constraint(C, F, N, Ct) <=>
+	transform_local_aux(C, F, N, Ct).
+
+builtin(F / N) \ transform_local(_, F, N, _) <=>
+	error('A builtin should not be used as a local constraint.').
+
+imported(F / N, _) \ transform_local(_, F, N, _) <=>
+	error('An external constraint should not be used as a local constraint.').
+
+transform_local(G, F, N, C) <=>
+	transform_local_aux(G, F, N, C).
+
+exported(F / N), export_prefix(Prefix) \ transform_local_aux(C, F, N, Ct) <=>
+	prefix_functor(Prefix, C, Ct).
+
+local_prefix(Prefix) \ transform_local_aux(C, F, N, Ct) <=>
+	local(F / N),
+	prefix_functor(Prefix, C, Ct).
+
+local(ask / 1) <=>
+	error('A constraint should not have ask/1 as functor.').
+local(entailed / 1) <=>
+	error('A constraint should not have entailed/1 as functor.').
+local(F / N) \ local(F / N) <=> true.
+
+ask(L, Asks) <=>
+	prefix_list(ask_, L, Asks).
+
+entailed(L, Entaileds) <=>
+	prefix_list(entailed_, L, Entaileds).
+
+prefix_list(_, [], Tgt) <=>
+	Tgt = [].
+prefix_list(Prefix, [H | T], Tgt) <=>
+	Tgt = [TgtH | TgtT],
+	prefix_functor(Prefix, H, TgtH),
+	prefix_list(Prefix, T, TgtT).
+
+prefix_functor(Prefix, T, Tt) <=>
+	T =.. [F | Args],
+	atom_concat(Prefix, F, PrefixF),
+	Tt =.. [PrefixF | Args].

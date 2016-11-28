@@ -1,0 +1,55 @@
+component common.
+
+import builtin/1 from transformation.
+
+export current_file/2, current_stream/1, error/1, declare_builtins/0.
+
+declare_builtins <=>
+	builtin(true / 0),
+	builtin(fail / 0),
+	builtin(= / 2),
+	builtin(\= / 2),
+	builtin(=.. / 2),
+	builtin(< / 2),
+	builtin(=< / 2),
+	builtin(> / 2),
+	builtin(>= / 2),
+	builtin(is / 2),
+	builtin(functor / 3),
+	builtin(arg / 3),
+	builtin(print / 1),
+	builtin(print / 2),
+	builtin(nl / 0),
+	builtin(nl / 1),
+	builtin(format / 3),
+	builtin(atom_concat / 3),
+	builtin(concat_atom / 3),
+	builtin(sub_atom / 5),
+	builtin(! / 0),
+	builtin(var / 1),
+	builtin(callable / 1),
+	builtin(compound / 1),
+	builtin(atom / 1),
+	builtin(integer / 1),
+	builtin(member / 2),
+	builtin(length / 2),
+	builtin(append / 3).
+
+current_file(File, Stream) \ error(Msg) <=>
+	line_count(Stream, Line),
+	line_position(Stream, Column),
+	format(user_error, 'File ~p, line ~d, character ~d:\n', [File, Line, Column]),
+	format(user_error, '~p\n\n', Msg),
+	fail.
+
+current_stream(Stream) \ error(Msg) <=>
+	line_count(Stream, Line),
+	line_position(Stream, Column),
+	format(user_error, 'Line ~d, character ~d:\n', [Line, Column]),
+	format(user_error, '~p\n\n', Msg),
+	fail.
+
+error(Msg) <=>
+	format(user_error, 'Error:\n', []),
+	format(user_error, '~p\n\n', Msg),
+	fail.

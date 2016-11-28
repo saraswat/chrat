@@ -1,0 +1,135 @@
+component booleans.
+
+export not/2, and/3, or/3, xor/3, impl/3.
+
+/*
+not(A, R)
+A	R
+0	1
+1	0
+*/
+
+not(0, R) <=> R = 1.
+not(1, R) <=> R = 0.
+not(A, 0) <=> A = 1.
+not(A, 1) <=> A = 0.
+
+ask(not(0, 1)) <=> entailed(not(0, 1)).
+ask(not(1, 0)) <=> entailed(not(1, 0)).
+
+/*
+and(A, B, R) 
+A	B	R
+0	0	0
+0	1	0
+1	0	0
+1	1	1
+*/
+
+and(0, _, R) <=> R = 0.
+and(_, 0, R) <=> R = 0.
+and(1, B, R) <=> B = R.
+and(A, 1, R) <=> A = R.
+and(A, B, 1) <=> A = 1, B = 1.
+and(X, X, R) <=> X = R.
+not(A, B) \ and(A, B, X) <=> X = 0.
+and(A, B, R) \ and(A, B, S) <=> R = S.
+and(A, B, R) \ and(B, A, S) <=> R = S.
+
+ask(and(0, B, 0)) <=> entailed(and(0, B, 0)).
+ask(and(A, 0, 0)) <=> entailed(and(A, 0, 0)).
+ask(and(1, X, X)) <=> entailed(and(1, X, X)).
+ask(and(X, 1, X)) <=> entailed(and(X, 1, X)).
+ask(and(X, X, X)) <=> entailed(and(X, X, X)).
+and(A, B, R) \ ask(and(A, B, R)) <=> entailed(and(A, B, R)).
+and(A, B, R) \ ask(and(B, A, R)) <=> entailed(and(B, A, R)).
+
+/*
+or(A, B, R)
+A	B	R
+0	0	0
+0	1	1
+1	0	1
+1	1	1
+*/
+
+or(0, B, R) <=> B = R.
+or(A, 0, R) <=> A = R.
+or(A, B, 0) <=> A = 0, B = 0.
+or(1, _, R) <=> R = 1.
+or(_, 1, R) <=> R = 1.
+or(X, X, R) <=> R = X.
+or(A, B, R) \ or(A, B, S) <=> R = S.
+or(A, B, R) \ or(B, A, S) <=> R = S.
+
+ask(or(0, X, X)) <=> entailed(or(0, X, X)).
+ask(or(X, 0, X)) <=> entailed(or(X, 0, X)).
+ask(or(1, B, 1)) <=> entailed(or(1, B, 1)).
+ask(or(A, 1, 1)) <=> entailed(or(A, 1, 1)).
+ask(or(X, X, X)) <=> entailed(or(X, X, X)).
+or(A, B, R) \ ask(or(A, B, R)) <=> entailed(or(A, B, R)).
+or(A, B, R) \ ask(or(B, A, R)) <=> entailed(or(B, A, R)).
+
+/*
+xor(A, B, R)
+A	B	R
+0	0	0
+0	1	1
+1	0	1
+1	1	0
+*/
+
+xor(0, B, R) <=> B = R.
+xor(A, 0, R) <=> A = R.
+xor(A, B, 0) <=> A = B.
+xor(1, B, R) <=> not(B, R).
+xor(A, 1, R) <=> not(A, R).
+xor(A, B, 1) <=> not(A, B).
+not(A, B) \ xor(A, B, R) <=> R = 1.
+xor(X, X, R) <=> R = 0.
+xor(X, B, X) <=> B = 0.
+xor(A, X, X) <=> A = 0.
+xor(A, B, R) \ xor(A, B, S) <=> R = S.
+xor(A, B, R) \ xor(A, S, B) <=> R = S.
+xor(A, B, R) \ xor(B, A, S) <=> R = S.
+xor(A, B, R) \ xor(B, S, A) <=> R = S.
+xor(A, B, R) \ xor(S, A, B) <=> R = S.
+xor(A, B, R) \ xor(S, B, A) <=> R = S.
+
+ask(xor(0, X, X)) <=> entailed(xor(0, X, X)).
+ask(xor(X, 0, X)) <=> entailed(xor(X, 0, X)).
+ask(xor(X, X, 0)) <=> entailed(xor(X, X, 0)).
+not(B, R) \ ask(xor(1, B, R)) <=> entailed(xor(1, B, R)).
+not(A, R) \ ask(xor(A, 1, R)) <=> entailed(xor(A, 1, R)).
+not(A, B) \ ask(xor(A, B, 1)) <=> entailed(xor(A, B, 1)).
+xor(A, B, R) \ ask(xor(A, B, R)) <=> entailed(xor(A, B, R)).
+xor(A, B, R) \ ask(xor(A, R, B)) <=> entailed(xor(A, R, B)).
+xor(A, B, R) \ ask(xor(B, A, R)) <=> entailed(xor(B, A, R)).
+xor(A, B, R) \ ask(xor(B, R, A)) <=> entailed(xor(B, R, R)).
+xor(A, B, R) \ ask(xor(R, A, B)) <=> entailed(xor(R, A, B)).
+xor(A, B, R) \ ask(xor(R, B, A)) <=> entailed(xor(R, B, A)).
+
+/*
+impl(A, B, R)
+A	B	R
+0	0	1
+0	1	1
+1	0	0
+1	1	1
+*/
+
+impl(0, _, R) <=> R = 1.
+impl(A, 0, R) <=> not(A, R).
+impl(A, B, 0) <=> A = 1, B = 0.
+impl(1, B, R) <=> B = R.
+impl(_, 1, R) <=> R = 1.
+impl(X, X, R) <=> R = 1.
+impl(X, B, X) <=> X = 1, B = 1.
+impl(A, B, R) \ impl(A, B, S) <=> R = S.
+
+ask(impl(0, B, 1)) <=> entailed(impl(0, B, 1)).
+not(A, R) \ ask(impl(A, 0, R)) <=> entailed(impl(A, 0, R)).
+ask(impl(1, X, X)) <=> entailed(impl(1, X, X)).
+ask(impl(A, 1, 1)) <=> entailed(impl(A, 1, 1)).
+ask(impl(X, X, 1)) <=> entailed(impl(X, X, 1)).
+impl(A, B, R) \ ask(impl(A, B, R)) <=> entailed(impl(A, B, R)).

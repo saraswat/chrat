@@ -1,0 +1,44 @@
+component fd.
+
+export fd/1.
+
+/*
+Domain constraints :
+fd(min =< X =< max).
+fd(min =< X).
+fd(X =< max).
+
+Inequalities :
+fd(A =< B + c).
+fd(A + c =< B).
+fd(A =< B + C).
+fd(A + C =< B).
+*/
+
+syntax =< infix left-to-right relation.
+syntax < infix left-to-right relation.
+syntax > infix left-to-right relation.
+syntax + infix right-to-left additive.
+syntax - infix right-to-left additive.
+
+fd(A =< B =< C) <=> fd(A =< B), fd(B =< C).
+ask(fd(A =< B =< C)) <=> fd(A =< B), fd(B =< C) | entailed(fd(A =< B =< C)).
+
+fd(A =< B) \ fd(A =< C) <=> B =< C | true.
+fd(A =< B) \ fd(C =< B) <=> C =< A | true.
+
+fd(A =< B) \ ask(fd(A =< C)) <=> B =< C | entailed(fd(A =< C)).
+fd(A =< B) \ ask(fd(C =< B)) <=> C =< A | entailed(fd(C =< A)).
+
+fd(A =< B + C), fd(B =< Bmax) \ fd(A =< Amax) <=> Max is Bmax + C, Amax > Max | fd(A =< Max).
+fd(A =< B + C), fd(Amin =< A) \ fd(Bmin =< B) <=> Min is Amin - C, Bmin < Min | fd(Min =< B).
+
+fd(A + C =< B) <=> D is -C | fd(A =< B + D).
+
+fd(A =< B + C), fd(B =< Bmax), fd(C =< Cmax) \ fd(A =< Amax) <=> Max is Bmax + Cmax, Amax > Max | fd(A =< Max).
+fd(A =< B + C), fd(Amin =< A), fd(C =< Cmax) \ fd(Bmin =< B) <=> Min is Amin - Cmax, Bmin < Min | fd(Min =< B).
+fd(A =< B + C), fd(Amin =< A), fd(B =< Bmax) \ fd(Cmin =< C) <=> Min is Amin - Bmax, Cmin < Min | fd(Min =< C).
+
+fd(A + C =< B), fd(Amin =< A), fd(Cmin =< C) \ fd(Bmin =< B) <=> Min is Amin + Cmin, Cmin > Min | fd(Min =< C).
+fd(A + C =< B), fd(B =< Bmax), fd(Cmin =< C) \ fd(A =< Amax) <=> Max is Bmax - Cmin, Amax > Max | fd(A =< Max).
+fd(A + C =< B), fd(B =< Bmax), fd(Amin =< A) \ fd(C =< Cmax) <=> Max is Bmax - Amin, Cmax > Max | fd(Min =< C).

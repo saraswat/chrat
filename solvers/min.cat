@@ -1,0 +1,11 @@
+component min.
+import leq/2 from leq.
+export min/3.
+minLeft     @ min(X,Y,Z) <=> leq(X,Y) | Z=X.
+minRight    @ min(X,Y,Z) <=> leq(Y,X) | Z=Y.
+minGen      @ min(X,Y,Z) ==> leq(Z,X), leq(Z,Y).
+
+minAskLeft  @ ask(min(X, Y, X)) <=> leq(X, Y) |
+                 entailed(min(X, Y, X)).
+minAskRight @ ask(min(X, Y, Y)) <=> leq(Y, X) |
+                 entailed(min(X, Y, Y)).

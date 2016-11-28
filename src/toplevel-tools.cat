@@ -1,0 +1,125 @@
+component 'toplevel-tools'.
+
+import current_stream/1, declare_builtins/0 from common.
+
+import transform_goal/2, local_prefix/1, declare_imports/2 from transformation.
+
+export init_toplevel / 0, execute / 2.
+
+init_toplevel <=>
+	declare_builtins,
+	local_prefix('toplevel:').
+
+enum_chr_store(L) <=>
+	nb_setval(store, []),
+	(
+		find_chr_constraint(C),
+		functor(C, F, _),
+		sub_atom(F, _, _, _, ':'),
+		\+ sub_atom(F, 0, _, _, 'common:'),
+		\+ sub_atom(F, 0, _, _, 'transformation:'),
+		\+ sub_atom(F, 0, _, _, 'toplevel:'),
+		nb_getval(store, T),
+		nb_linkval(store, [C | T]),
+		fail
+	;
+		nb_getval(store, L),
+		nb_deletel(store)
+	).
+
+output_store([]) <=>
+	print(true).
+output_store([H]) <=>
+	print(H).
+output_store([H | T]) <=>
+	print(H),
+	print(', '),
+	output_store(T).
+
+detect_equalities([], List, _) <=>
+	List = [].
+detect_equalities([Name = Value | T], List, Var_names) <=>
+	(
+		var(Value)
+	->
+		find_name(Value, N, T),
+		(
+			\+ var(N)
+		->
+			List = [Name = N | New_list]
+		;
+			List = New_list
+		)
+	;
+		name_item(Value, N, Var_names),
+		(
+			N \= Name
+		->
+			List = [Name = N | New_list]
+		;
+			List = New_list
+		)
+	),
+	detect_equalities(T, New_list, Var_names).
+
+execute(end_of_file, _) <=>
+	halt.
+execute((import Signatures from Component), _) <=>
+	declare_imports(Signatures, Component).
+execute(G, Var_names) <=>
+	current_stream(user_input),
+	(
+		(
+			transform_goal(G, Gt),
+			catch(
+				(
+					call(Gt)
+				;
+					print('\nno'),
+					fail
+				),
+				Error,
+				(
+					format(user_error, '\nUncaught exception: ~p', [Error]),
+					fail
+				)
+			),
+			enum_chr_store(L),
+			name_list(L, L_names, Var_names),
+			detect_equalities(Var_names, Eq, Var_names),
+			append(Eq, L_names, Store),
+			nl, output_store(Store)
+		->
+			fail
+		;
+			fail
+		)
+	;
+		executed
+	).
+
+name_list([], L, _) <=>
+	L = [].
+
+name_list([H | T], L, Var_names) <=>
+	L = [HN | TN],
+	name_item(H, HN, Var_names),
+	name_list(T, TN, Var_names).
+
+name_item(T, T_names, Var_names) <=> compound(T), T =.. [F | Args] |
+	name_list(Args, Args_names, Var_names),
+	T_names =.. [F | Args_names].
+name_item(V, Name, Var_names) <=> var(V) |
+	find_name(V, Name, Var_names).
+name_item(Item, It, _) <=>
+	It = Item.
+
+find_name(V, Name, []) <=>
+	Name = V.
+find_name(V, Name, [N = V | _]) <=>
+	Name = N.
+find_name(V, Name, [_ | T]) <=>
+	find_name(V, Name, T).
+
+executed, current_stream(_)  <=>
+	true.

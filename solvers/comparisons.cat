@@ -1,0 +1,28 @@
+component comparisons.
+
+export le/2, ge/2, lt/2, gt/2, ne/2.
+
+ne(X, X) <=> false.
+lt(X, Y) \ ask(ne(X, Y)) <=> entailed(ne(X, Y)).
+
+le(X, X) <=> true.
+le(X, Y), le(Y, X) <=> X = Y.
+le(X, Y), le(Y, Z) ==> le(X, Z).
+le(X, Y) \ le(X, Y) <=> true.
+
+le(X, Y) \ ask(le(X, Y)) <=> entailed(le(X, Y)).
+lt(X, Y) \ ask(le(X, Y)) <=> entailed(lt(X, Y)).
+
+ge(X, Y) <=> le(Y, X).
+
+le(X, Y) \ ask(ge(Y, X)) <=> entailed(ge(Y, X)).
+
+le(X, Y), ne(X, Y) <=> lt(X, Y).
+
+lt(X, X) <=> false.
+lt(X, Y)  ==> le(Y, Z) | lt(X, Z).
+lt(X, Y) \ lt(X, Y) <=> true.
+
+lt(X, Y) \ ask(lt(X, Y)) <=> entailed(lt(X, Y)).
+
+gt(X, Y) <=> lt(Y, X).

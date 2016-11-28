@@ -1,0 +1,29 @@
+component union_find.
+
+export make / 1, =~ / 2.
+
+syntax =~ infix left-to-right relation.
+syntax ~> infix left-to-right relation.
+
+make      @ make(A) <=> root(A, 0).
+
+union     @ =~(A, B) <=> find(A, X), find(B, Y), link(X, Y).
+
+findNode  @ A ~> B, find(A, X) <=> find(B, X), A ~> X.
+findRoot  @ root(A, _) \ find(A, X) <=> X = A.
+
+linkEq    @ link(A, A) <=> true.
+linkLeft  @ link(A, B), root(A, N), root(B, M) <=> N >= M |
+              B ~> A, N1 is max(M+1, N), root(A, N1).
+linkRight @ link(B, A), root(A, N), root(B, M) <=> N >= M |
+              B ~> A, N1 is max(M+1, N), root(A, N1).
+
+askEq      @ ask(A =~ B) <=>
+                find(A, X), find(B, Y), check(A, B, X, Y).
+checkEq    @ root(X, _) \ check(A, B, X, X) <=> entailed(A =~ B).
+
+checkLeft  @ X ~> C \ check(A, B, X, Y) <=>
+                find(A, Z), check(A, B, Z, Y).
+checkRight @ Y ~> C \ check(A, B, X, Y) <=>
+                find(B, Z), check(A, B, X, Z).
+

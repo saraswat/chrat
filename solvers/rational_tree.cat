@@ -1,0 +1,41 @@
+component rational_tree.
+
+import =~ / 2 from union_find.
+
+export fun / 3, argument / 3, ~=~ / 2.
+
+%syntax '=~' infix left-to-right relation.
+%syntax '~=~' infix left-to-right relation.
+
+eqFun @ fun(X0, F0, N0) \ fun(X1, F1, N1) <=> X0 =~ X1 |
+           F0 = F1, N0 = N1.
+eqArg @ argument(X0, N, Y0) \ argument(X1, N, Y1) <=> X0 =~ X1 |
+           Y0 =~ Y1.
+
+eqProp @ X ~=~ Y <=> X =~ Y.
+
+askEq @ ask(A ~=~ B) <=> checkTree(M, A, B).
+
+checkTree(M, A, B) <=> eqTree(M, A, B) | entailed(A ~=~ B).
+
+ask(eqTree(M, A, B)) <=>
+   checking(M, A, B), fun(A, FA, NA), fun(B, FB, NB),
+   checkTreeAux(M, A, B, FA, NA, FB, NB).
+
+checkTreeAux(M, A, B, F, N, F, N) <=>
+   askArgs(M, A, B, 1, N), collectArgs(M, A, B, 1, N).
+
+askArgs(M, A, B, I, N) <=> I =< N |
+   argument(A, I, AI), argument(B, I, BI),
+   askArg(M, A, B, I, AI, BI),
+   J is I + 1, askArgs(M, A, B, J, N).
+askArgs(M, A, B, I, N) <=> true.
+collectArgs(M, A, B, I, N), entailedArg(M, A, B, I) <=>
+   J is I + 1, collectArgs(M, A, B, J, N).
+collectArgs(M, A, B, I, N) <=> I > N |
+   entailed(eqTree(M, A, B)).
+
+checking(M, AI, BI) \ askArg(M, A, B, I, AI, BI) <=>
+   entailedArg(M, A, B, I).
+askArg(M, A, B, I, AI, BI) <=> eqTree(M, AI, BI) |
+   entailedArg(M, A, B, I).
